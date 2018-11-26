@@ -32,3 +32,9 @@ a. The clock can be slower than the actual specification (150kHz-400kHz). Jitter
 b. The chip seems going crazy (i.e. jumping or running?) if no clocking happens for about 10 seconds. Interesting is, the dumped data is actually something valid and JUMPing to the dumped jump instruction(s) works fine.
 
 c. 4 consecutive dumps on 2 chips have been dumped equally. Need to write a disasassembler and see what we got.
+
+# Disassembler
+
+A simple disassembler is provided. It annotates instructions so to drammatically improve readability.
+
+Instruction's data has been written into a ods sheet and then lookup tables have been generated as Python code: just feed the script the binary file and the corresponding disassembled binary is produced.
