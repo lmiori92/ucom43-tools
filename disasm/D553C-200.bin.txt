@@ -5,6 +5,8 @@
 
 ; Initialization continues here from 0057 (after apparently the delay counter routine)
 0002:    A0 6F      JMP 006F    ;PC ← P10 … P0                                           ; Jump to 006F
+
+; CZP 01 , invoked several times, operating on VFD RAM content?
 0004:    83         LDZ 03    	;DPh ← 0 ; DPl ← I3I2I1I0
 0005:    C8         JCP 08    	;PC ← p5 … p0
 0006:    00         NOP    	;No operation
@@ -13,6 +15,7 @@
 0009:    2C         XD    	;(Acc) ↔ [(DP)] ; DPl ← (DPl) – 1 ; skip if DPl = F
 000A:    C8         JCP 08    	;PC ← p5 … p0
 000B:    48         RT    	;PC ← (STACK)
+
 000C:    15 1D      LDI 1D    	;DP ← I6 … I0
 000E:    A3 F6      JMP 03F6    	;PC ← P10 … P0
 
@@ -23,9 +26,11 @@
 0012:    D1         JCP 11    	;PC ← p5 … p0                                                ; Get back to 0011. This skips above when oveflow to F     ; seems a delay counter
 0013:    48         RT    	;PC ← (STACK)                                                ; Return to previous context ( which is 0002 ? )
 
-0014:    87         LDZ 07    	;DPh ← 0 ; DPl ← I3I2I1I0
-0015:    0E         OP    	;PORT (DPl) ← (Acc)
+; This piece of code is used to set the PORT H (NVRAM ADDRESS SELECTOR)
+0014:    87         LDZ 07    	;DPh ← 0 ; DPl ← I3I2I1I0                                    ; Select PORT H
+0015:    0E         OP    	;PORT (DPl) ← (Acc)                                          ; Set (Acc) to port H (NVRAM ADDRESS)
 0016:    A7 7E      JMP 077E    	;PC ← P10 … P0
+
 0018:    0B         CLC    	;C ← 0
 0019:    3A         LM 02    	;Acc ←  [(DP)] ; DPh ← (DPh) OR M1M0
 001A:    06         DAA    	;Acc ← (Acc) + 6
@@ -34,9 +39,11 @@
 001D:    2E         XMD 02    	;(Acc) ↔ [(DP)] ; DPh ← (DPh) OR M1M0 ; DPl ← (DPl) – 1 ; skip if DPl = F
 001E:    E0         JCP 20    	;PC ← p5 … p0
 001F:    48         RT    	;PC ← (STACK)
+
 0020:    16 E1      CLI 01    	;skip if (DPl) = I3I2I1I0
 0022:    D9         JCP 19    	;PC ← p5 … p0
 0023:    48         RT    	;PC ← (STACK)
+
 0024:    1B         STC    	;C ← 1
 0025:    A5 00      JMP 0500    	;PC ← P10 … P0
 0027:    00         NOP    	;No operation
@@ -47,13 +54,17 @@
 0029:    A2 00      JMP 0200    ;PC ← P10 … P0                                               ; ...and do a jump to 0200
 002B:    00         NOP    	;No operation                                                ; HOLE ?
 
-002C:    66         REB 02    	;PORT E (B1B0) ← 0
+002C:    66         REB 02    	;PORT E (B1B0) ← 0                                           ; Reset ASP / MEMORY CLOCK line
 002D:    A6 22      JMP 0622    	;PC ← P10 … P0
 002F:    00         NOP    	;No operation
-0030:    15 38      LDI 38    	;DP ← I6 … I0
-0032:    90         CLA    	;Acc ← 0
-0033:    02         S    	;[(DP)] ← Acc
-0034:    0E         OP    	;PORT (DPl) ← (Acc)
+
+; Apparently this is setting the NVRAM mode decoder to STANDBY and
+; therefore perhaps this is the ASP communication routine ?
+; CZP 0C routine
+0030:    15 38      LDI 38    	;DP ← I6 … I0                                                ; Load data pointer to 0x38
+0032:    90         CLA    	;Acc ← 0                                                     ; Reset Acc
+0033:    02         S    	;[(DP)] ← Acc                                                ; Reset 0x38 memory cell
+0034:    0E         OP    	;PORT (DPl) ← (Acc)                                          ; Set NVRAM mode decoder (STANDBY)
 0035:    A4 A7      JMP 04A7    ;PC ← P10 … P0
 0037:    00         NOP    	;No operation
 
@@ -124,7 +135,7 @@
 006E:    48         RT    	;PC ← (STACK)                                                ; Return to previous contex
 
 ; Initialization continues here...from 0002
-006F:    AF 6C      CAL 076C    ;(PC) → STACK ; PC ← P10...P0
+006F:    AF 6C      CAL 076C    ;(PC) → STACK ; PC ← P10...P0                                ; Call subroutine at 076C
 0071:    BE         CZP 0E    	;(PC) → STACK ; PC ← 00000P3P2P1P000
 0072:    14 80      STM 00    	;TMF/F ← 0 ; TIMER ← I5...I0
 0074:    AF 6C      CAL 076C    	;(PC) → STACK ; PC ← P10...P0
@@ -153,8 +164,9 @@
 008E:    78         SMB 00    	;[DP, B1B0)] ← 1
 008F:    84         LDZ 04    	;DPh ← 0 ; DPl ← I3I2I1I0
 0090:    78         SMB 00    	;[DP, B1B0)] ← 1
-0091:    90         CLA    	;Acc ← 0
-0092:    B5         CZP 05    	;(PC) → STACK ; PC ← 00000P3P2P1P000
+
+0091:    90         CLA    	;Acc ← 0                                        ; Set the NVRAM ADDRESS to 0 (Acc will be set to the NVRAM ADDRESS PORT)
+0092:    B5         CZP 05    	;(PC) → STACK ; PC ← 00000P3P2P1P000            ; Goto 0014, which sets the NVRAM address to the port H
 0093:    A8 FC      CAL 00FC    	;(PC) → STACK ; PC ← P10...P0
 0095:    82         LDZ 02    	;DPh ← 0 ; DPl ← I3I2I1I0
 0096:    39         LM 01    	;Acc ←  [(DP)] ; DPh ← (DPh) OR M1M0
@@ -163,9 +175,11 @@
 0099:    39         LM 01    	;Acc ←  [(DP)] ; DPh ← (DPh) OR M1M0
 009A:    13         DED    	;DPl ← (DPl) – 1 ; skip if (DPl) = F
 009B:    02         S    	;[(DP)] ← Acc
-009C:    96         LI 06    	;Acc ←  I3I2I1I0
-009D:    B5         CZP 05    	;(PC) → STACK ; PC ← 00000P3P2P1P000
-009E:    AF 71      CAL 0771    	;(PC) → STACK ; PC ← P10...P0
+009C:    96         LI 06    	;Acc ←  I3I2I1I0                                ; Set the NVRAM ADDRESS to 6 (Acc will be set to the NVRAM ADDRESS PORT)
+009D:    B5         CZP 05    	;(PC) → STACK ; PC ← 00000P3P2P1P000            ; Goto 0014, which sets the NVRAM address to the port H
+
+009E:    AF 71      CAL 0771    	;(PC) → STACK ; PC ← P10...P0           
+
 00A0:    83         LDZ 03    	;DPh ← 0 ; DPl ← I3I2I1I0
 00A1:    9E         LI 0E    	;Acc ←  I3I2I1I0
 00A2:    0C         CM    	;skip if (Acc) = [(DP)]
@@ -214,8 +228,8 @@
 00D3:    02         S    	;[(DP)] ← Acc
 00D4:    AC 70      CAL 0470    	;(PC) → STACK ; PC ← P10...P0
 00D6:    BE         CZP 0E    	;(PC) → STACK ; PC ← 00000P3P2P1P000
-00D7:    98         LI 08    	;Acc ←  I3I2I1I0
-00D8:    B5         CZP 05    	;(PC) → STACK ; PC ← 00000P3P2P1P000
+00D7:    98         LI 08    	;Acc ←  I3I2I1I0                                      ; Set the NVRAM ADDRESS to 8 (Acc will be set to the NVRAM ADDRESS PORT)
+00D8:    B5         CZP 05    	;(PC) → STACK ; PC ← 00000P3P2P1P000                  ; Goto 0014, which sets the NVRAM address to the port H
 00D9:    EF         JCP 2F    	;PC ← p5 … p0
 00DA:    83         LDZ 03    	;DPh ← 0 ; DPl ← I3I2I1I0
 00DB:    B6         CZP 06    	;(PC) → STACK ; PC ← 00000P3P2P1P000
@@ -245,12 +259,14 @@
 00F8:    0E         OP    	;PORT (DPl) ← (Acc)
 00F9:    1E 00      OCD 00    	;PORT C,D ← I7...I0
 00FB:    48         RT    	;PC ← (STACK)
+
 00FC:    B1         CZP 01    	;(PC) → STACK ; PC ← 00000P3P2P1P000
 00FD:    81         LDZ 01    	;DPh ← 0 ; DPl ← I3I2I1I0
 00FE:    79         SMB 01    	;[DP, B1B0)] ← 1
 00FF:    48         RT    	;PC ← (STACK)
-0100:    9A         LI 0A    	;Acc ←  I3I2I1I0
-0101:    B5         CZP 05    	;(PC) → STACK ; PC ← 00000P3P2P1P000
+
+0100:    9A         LI 0A    	;Acc ←  I3I2I1I0                                                             ; Set the NVRAM ADDRESS to A (Acc will be set to the NVRAM ADDRESS PORT)
+0101:    B5         CZP 05    	;(PC) → STACK ; PC ← 00000P3P2P1P000                                         ; Goto 0014, which sets the NVRAM address to the port H
 0102:    DB         JCP 1B    	;PC ← p5 … p0
 0103:    83         LDZ 03    	;DPh ← 0 ; DPl ← I3I2I1I0
 0104:    39         LM 01    	;Acc ←  [(DP)] ; DPh ← (DPh) OR M1M0
@@ -511,12 +527,12 @@
 021E:    3B         LM 03    	;Acc ←  [(DP)] ; DPh ← (DPh) OR M1M0
 021F:    38         L    	;Acc ←  [(DP)]
 0220:    82         LDZ 02    	;DPh ← 0 ; DPl ← I3I2I1I0
-0221:    0E         OP    	;PORT (DPl) ← (Acc)
+0221:    0E         OP    	;PORT (DPl) ← (Acc)                                  ; Set VFD display PORT C
 0222:    4B         XAW    	;(Acc) ↔ W
 0223:    07         TAL    	;DPl ← (Acc)
 0224:    39         LM 01    	;Acc ←  [(DP)] ; DPh ← (DPh) OR M1M0
 0225:    38         L    	;Acc ←  [(DP)]
-0226:    83         LDZ 03    	;DPh ← 0 ; DPl ← I3I2I1I0
+0226:    83         LDZ 03    	;DPh ← 0 ; DPl ← I3I2I1I0                            ; Set VFD display PORT D
 0227:    0E         OP    	;PORT (DPl) ← (Acc)
 0228:    F6         JCP 36    	;PC ← p5 … p0
 0229:    25         TAB 01    	;skip if [(Acc, B1B0)] = 1
@@ -532,7 +548,7 @@
 0236:    15 3C      LDI 3C    	;DP ← I6 … I0
 0238:    38         L    	;Acc ←  [(DP)]
 0239:    86         LDZ 06    	;DPh ← 0 ; DPl ← I3I2I1I0
-023A:    0E         OP    	;PORT (DPl) ← (Acc)
+023A:    0E         OP    	;PORT (DPl) ← (Acc)                                  ; Set VFD display PORT G 
 023B:    0B         CLC    	;C ← 0
 023C:    30         RAR    	;(C ) → Acc3, (Accn) → (Accn-1), Acca → C
 023D:    15 3C      LDI 3C    	;DP ← I6 … I0
@@ -542,24 +558,24 @@
 0242:    D2         JCP 12    	;PC ← p5 … p0
 0243:    15 12      LDI 12    	;DP ← I6 … I0
 0245:    38         L    	;Acc ←  [(DP)]
-0246:    0E         OP    	;PORT (DPl) ← (Acc)
+0246:    0E         OP    	;PORT (DPl) ← (Acc)                                  ; Set VFD display PORT C
 0247:    13         DED    	;DPl ← (DPl) – 1 ; skip if (DPl) = F
 0248:    38         L    	;Acc ←  [(DP)]
-0249:    83         LDZ 03    	;DPh ← 0 ; DPl ← I3I2I1I0
-024A:    0E         OP    	;PORT (DPl) ← (Acc)
+0249:    83         LDZ 03    	;DPh ← 0 ; DPl ← I3I2I1I0            
+024A:    0E         OP    	;PORT (DPl) ← (Acc)                                  ; Set VFD display PORT D
 024B:    15 10      LDI 10    	;DP ← I6 … I0
 024D:    38         L    	;Acc ←  [(DP)]
 024E:    85         LDZ 05    	;DPh ← 0 ; DPl ← I3I2I1I0
-024F:    0E         OP    	;PORT (DPl) ← (Acc)
+024F:    0E         OP    	;PORT (DPl) ← (Acc)                                  ; Set VFD display PORT F
 0250:    73         SPB 03    	;PORT (DPl, B1B0) ← 1
 0251:    DA         JCP 1A    	;PC ← p5 … p0
 0252:    15 24      LDI 24    	;DP ← I6 … I0
 0254:    38         L    	;Acc ←  [(DP)]
 0255:    85         LDZ 05    	;DPh ← 0 ; DPl ← I3I2I1I0
-0256:    0E         OP    	;PORT (DPl) ← (Acc)
+0256:    0E         OP    	;PORT (DPl) ← (Acc)                                  ; Set VFD display PORT F
 0257:    9C         LI 0C    	;Acc ←  I3I2I1I0
 0258:    33         IND    	;DPl ← (DPl) + 1 ; skip if (DPl) = 0
-0259:    0E         OP    	;PORT (DPl) ← (Acc)
+0259:    0E         OP    	;PORT (DPl) ← (Acc)                                  ; Set VFD display PORT G 
 025A:    8C         LDZ 0C    	;DPh ← 0 ; DPl ← I3I2I1I0
 025B:    58         TMB 00    	;skip if [(DP, B1B0)] = 1
 025C:    A2 80      JMP 0280    	;PC ← P10 … P0
@@ -577,13 +593,14 @@
 026A:    5A         TMB 02    	;skip if [(DP, B1B0)] = 1
 026B:    F8         JCP 38    	;PC ← p5 … p0
 026C:    79         SMB 01    	;[DP, B1B0)] ← 1
-026D:    A8 F3      CAL 00F3    	;(PC) → STACK ; PC ← P10...P0
-026F:    65         REB 01    	;PORT E (B1B0) ← 0
+026D:    A8 F3      CAL 00F3    ;(PC) → STACK ; PC ← P10...P0
+026F:    65         REB 01    	;PORT E (B1B0) ← 0                                                   ; PIN 13. LOW -> DATA OUT
+
 0270:    BC         CZP 0C    	;(PC) → STACK ; PC ← 00000P3P2P1P000
 0271:    93         LI 03    	;Acc ←  I3I2I1I0
-0272:    0E         OP    	;PORT (DPl) ← (Acc)
-0273:    76         SEB 02    	;PORT E (B1B0) ← 1
-0274:    66         REB 02    	;PORT E (B1B0) ← 0
+0272:    0E         OP    	;PORT (DPl) ← (Acc)                                  ; 
+0273:    76         SEB 02    	;PORT E (B1B0) ← 1                                                   ; PIN 14. HIGH -> B – ASP – CLOCK
+0274:    66         REB 02    	;PORT E (B1B0) ← 0                                                   ; PIN 14. LOW -> B – ASP – CLOCK
 0275:    31         EI    	;INTE F/F ← 1
 0276:    A2 D8      JMP 02D8    	;PC ← P10 … P0
 0278:    8C         LDZ 0C    	;DPh ← 0 ; DPl ← I3I2I1I0
@@ -895,14 +912,14 @@
 03DC:    68         RMB 00    	;[DP, B1B0)] ← 0
 03DD:    88         LDZ 08    	;DPh ← 0 ; DPl ← I3I2I1I0
 03DE:    79         SMB 01    	;[DP, B1B0)] ← 1
-03DF:    77         SEB 03    	;PORT E (B1B0) ← 1
+03DF:    77         SEB 03    	;PORT E (B1B0) ← 1                                                       ; 
 03E0:    A5 B7      JMP 05B7    	;PC ← P10 … P0
 03E2:    15 2D      LDI 2D    	;DP ← I6 … I0
 03E4:    94         LI 04    	;Acc ←  I3I2I1I0
 03E5:    3C         XI    	;(Acc) ↔ [(DP)] ; DPl ← (DPl) + 1 ; skip if DPl = F
 03E6:    90         CLA    	;Acc ← 0
-03E7:    55         TPA 01    	;skip if (PORTA(B1B0) = 1
-03E8:    91         LI 01    	;Acc ←  I3I2I1I0
+03E7:    55         TPA 01    	;skip if (PORTA(B1B0) = 1                                                ; Skip next instruction if TEST pin is asserted i.e. high i.e. pull-down to 0V
+03E8:    91         LI 01    	;Acc ←  I3I2I1I0                                                         ; this instruction is only executed during TEST
 03E9:    3C         XI    	;(Acc) ↔ [(DP)] ; DPl ← (DPl) + 1 ; skip if DPl = F
 03EA:    A7 B4      JMP 07B4    	;PC ← P10 … P0
 03EC:    04         TC    	;skip if (C ) = 1
@@ -910,6 +927,7 @@
 03EE:    F1         JCP 31    	;PC ← p5 … p0
 03EF:    5B         TMB 03    	;skip if [(DP, B1B0)] = 1
 03F0:    48         RT    	;PC ← (STACK)
+
 03F1:    97         LI 07    	;Acc ←  I3I2I1I0
 03F2:    3C         XI    	;(Acc) ↔ [(DP)] ; DPl ← (DPl) + 1 ; skip if DPl = F
 03F3:    9A         LI 0A    	;Acc ←  I3I2I1I0
@@ -917,6 +935,7 @@
 03F5:    49         RTS    	;PC ← (STACK) ; PC ← (PC) + 1 (, 2 maybe a jump can be skipped??)
 03F6:    1F         DEM    	;[(DP)] ← [(DP)] - 1; skip if [(DP)] = F
 03F7:    48         RT    	;PC ← (STACK)
+
 03F8:    33         IND    	;DPl ← (DPl) + 1 ; skip if (DPl) = 0
 03F9:    F6         JCP 36    	;PC ← p5 … p0
 03FA:    15 1D      LDI 1D    	;DP ← I6 … I0
@@ -924,6 +943,7 @@
 03FD:    3C         XI    	;(Acc) ↔ [(DP)] ; DPl ← (DPl) + 1 ; skip if DPl = F
 03FE:    FC         JCP 3C    	;PC ← p5 … p0
 03FF:    49         RTS    	;PC ← (STACK) ; PC ← (PC) + 1 (, 2 maybe a jump can be skipped??)
+
 0400:    5B         TMB 03    	;skip if [(DP, B1B0)] = 1
 0401:    A2 0F      JMP 020F    	;PC ← P10 … P0
 0403:    E2         JCP 22    	;PC ← p5 … p0
@@ -1021,7 +1041,7 @@
 046E:    7A         SMB 02    	;[DP, B1B0)] ← 1
 046F:    CF         JCP 0F    	;PC ← p5 … p0
 0470:    B1         CZP 01    	;(PC) → STACK ; PC ← 00000P3P2P1P000
-0471:    AF A2      CAL 07A2    	;(PC) → STACK ; PC ← P10...P0
+0471:    AF A2      CAL 07A2    ;(PC) → STACK ; PC ← P10...P0
 0473:    2D         XMD 01    	;(Acc) ↔ [(DP)] ; DPh ← (DPh) OR M1M0 ; DPl ← (DPl) – 1 ; skip if DPl = F
 0474:    39         LM 01    	;Acc ←  [(DP)] ; DPh ← (DPh) OR M1M0
 0475:    79         SMB 01    	;[DP, B1B0)] ← 1
@@ -1069,14 +1089,17 @@
 04A0:    78         SMB 00    	;[DP, B1B0)] ← 1
 04A1:    8F         LDZ 0F    	;DPh ← 0 ; DPl ← I3I2I1I0
 04A2:    93         LI 03    	;Acc ←  I3I2I1I0
-04A3:    A7 B3      JMP 07B3    	;PC ← P10 … P0
-04A5:    66         REB 02    	;PORT E (B1B0) ← 0
+04A3:    A7 B3      JMP 07B3    ;PC ← P10 … P0                                   
+04A5:    66         REB 02    	;PORT E (B1B0) ← 0                               ; CLOCK line Reset
 04A6:    1D         INM    	;[(DP)] ← [(DP)] + 1; skip if [(DP)] = 0
-04A7:    76         SEB 02    	;PORT E (B1B0) ← 1
+
+; Jumps here (ASP, most probably since NVRAM is STANDBY here)
+04A7:    76         SEB 02    	;PORT E (B1B0) ← 1                               ; CLOCK line Set
 04A8:    59         TMB 01    	;skip if [(DP, B1B0)] = 1
 04A9:    E5         JCP 25    	;PC ← p5 … p0
-04AA:    66         REB 02    	;PORT E (B1B0) ← 0
+04AA:    66         REB 02    	;PORT E (B1B0) ← 0                               ; CLOCK line Reset
 04AB:    48         RT    	;PC ← (STACK)
+
 04AC:    86         LDZ 06    	;DPh ← 0 ; DPl ← I3I2I1I0
 04AD:    68         RMB 00    	;[DP, B1B0)] ← 0
 04AE:    15 12      LDI 12    	;DP ← I6 … I0
@@ -1157,24 +1180,33 @@
 0504:    2E         XMD 02    	;(Acc) ↔ [(DP)] ; DPh ← (DPh) OR M1M0 ; DPl ← (DPl) – 1 ; skip if DPl = F
 0505:    C7         JCP 07    	;PC ← p5 … p0
 0506:    48         RT    	;PC ← (STACK)
+
 0507:    16 E1      CLI 01    	;skip if (DPl) = I3I2I1I0
 0509:    C0         JCP 00    	;PC ← p5 … p0
 050A:    48         RT    	;PC ← (STACK)
+
+; This routine waits for the timer device: 1ms (i.e. 2x 630us @400kHz is about 1.3ms; at 420kHz, slightly less)
 050B:    05         TTM    	;skip if (TM F/F) = 1                                                           ; Called 8 times, maybe a start point or so ?
 050C:    CB         JCP 0B    	;PC ← p5 … p0
-050D:    14 81      STM 01    	;TMF/F ← 0 ; TIMER ← I5...I0
-050F:    40         IA    	;(PORT A) → Acc
-0510:    15 70      LDI 70    	;DP ← I6 … I0
-0512:    5B         TMB 03    	;skip if [(DP, B1B0)] = 1
+
+050D:    14 81      STM 01    	;TMF/F ← 0 ; TIMER ← I5...I0                                                    ; Reload the timer for the next round
+050F:    40         IA    	;(PORT A) → Acc                                                                 ; Read in PORT A (REMOTE, TEST, BUTTON; NVRAM-INPUT)
+0510:    15 70      LDI 70    	;DP ← I6 … I0                                                                   ; Load the data pointer with 0x70
+; Do something on some condition, perhaps it could well be "something to save to NVRAM"
+0512:    5B         TMB 03    	;skip if [(DP, B1B0)] = 1                                                       ; skip if bit3 is set (FLAG?)
 0513:    FF         JCP 3F    	;PC ← p5 … p0
+
 0514:    6B         RMB 03    	;[DP, B1B0)] ← 0
 0515:    1B         STC    	;C ← 1
+
 0516:    24         TAB 00    	;skip if [(Acc, B1B0)] = 1
 0517:    0B         CLC    	;C ← 0
 0518:    15 41      LDI 41    	;DP ← I6 … I0
 051A:    18         EXL    	;Acc ← (Acc) OR ([DP])
 051B:    2B         XM 03    	;(Acc) ↔ [(DP)] ; DPh ← (DPh) OR M1M0
 051C:    38         L    	;Acc ←  [(DP)]
+
+; Maybe REMOTE control ?
 051D:    30         RAR    	;(C ) → Acc3, (Accn) → (Accn-1), Acca → C
 051E:    3C         XI    	;(Acc) ↔ [(DP)] ; DPl ← (DPl) + 1 ; skip if DPl = F
 051F:    1F         DEM    	;[(DP)] ← [(DP)] - 1; skip if [(DP)] = F
@@ -1183,15 +1215,17 @@
 0523:    3B         LM 03    	;Acc ←  [(DP)] ; DPh ← (DPh) OR M1M0
 0524:    13         DED    	;DPl ← (DPl) – 1 ; skip if (DPl) = F
 0525:    24         TAB 00    	;skip if [(Acc, B1B0)] = 1
-0526:    A5 49      JMP 0549    	;PC ← P10 … P0
+0526:    A5 49      JMP 0549    ;PC ← P10 … P0
 0528:    5D         FBT 01    	;skip if [(FLAG, B1B0)] = 1
 0529:    F0         JCP 30    	;PC ← p5 … p0
 052A:    58         TMB 00    	;skip if [(DP, B1B0)] = 1
 052B:    48         RT    	;PC ← (STACK)
+
 052C:    68         RMB 00    	;[DP, B1B0)] ← 0
 052D:    87         LDZ 07    	;DPh ← 0 ; DPl ← I3I2I1I0
 052E:    79         SMB 01    	;[DP, B1B0)] ← 1
 052F:    48         RT    	;PC ← (STACK)
+
 0530:    7D         SFB 01    	;[FLAG, B1B0)] ← 1
 0531:    15 4E      LDI 4E    	;DP ← I6 … I0
 0533:    9F         LI 0F    	;Acc ←  I3I2I1I0
@@ -1205,19 +1239,23 @@
 053C:    7A         SMB 02    	;[DP, B1B0)] ← 1
 053D:    69         RMB 01    	;[DP, B1B0)] ← 0
 053E:    48         RT    	;PC ← (STACK)
+
 053F:    5A         TMB 02    	;skip if [(DP, B1B0)] = 1
 0540:    CC         JCP 0C    	;PC ← p5 … p0
 0541:    3B         LM 03    	;Acc ←  [(DP)] ; DPh ← (DPh) OR M1M0
 0542:    1D         INM    	;[(DP)] ← [(DP)] + 1; skip if [(DP)] = 0
 0543:    5B         TMB 03    	;skip if [(DP, B1B0)] = 1
 0544:    48         RT    	;PC ← (STACK)
+
 0545:    3B         LM 03    	;Acc ←  [(DP)] ; DPh ← (DPh) OR M1M0
 0546:    6A         RMB 02    	;[DP, B1B0)] ← 0
 0547:    7B         SMB 03    	;[DP, B1B0)] ← 1
 0548:    48         RT    	;PC ← (STACK)
+
 0549:    5D         FBT 01    	;skip if [(FLAG, B1B0)] = 1
 054A:    78         SMB 00    	;[DP, B1B0)] ← 1
 054B:    48         RT    	;PC ← (STACK)
+
 054C:    59         TMB 01    	;skip if [(DP, B1B0)] = 1
 054D:    E9         JCP 29    	;PC ← p5 … p0
 054E:    24         TAB 00    	;skip if [(Acc, B1B0)] = 1
@@ -1226,15 +1264,17 @@
 0551:    1D         INM    	;[(DP)] ← [(DP)] + 1; skip if [(DP)] = 0
 0552:    5A         TMB 02    	;skip if [(DP, B1B0)] = 1
 0553:    48         RT    	;PC ← (STACK)
+
 0554:    14 83      STM 03    	;TMF/F ← 0 ; TIMER ← I5...I0
-0556:    54         TPA 00    	;skip if (PORTA(B1B0) = 1
-0557:    DD         JCP 1D    	;PC ← p5 … p0
+0556:    54         TPA 00    	;skip if (PORTA(B1B0) = 1                                                            ; REMOTE CONTROL state. On state, skip.
+0557:    DD         JCP 1D    	;PC ← p5 … p0                                                                        ; Maybe if line active, go to REMOTE processing?
 0558:    05         TTM    	;skip if (TM F/F) = 1
 0559:    D6         JCP 16    	;PC ← p5 … p0
 055A:    3B         LM 03    	;Acc ←  [(DP)] ; DPh ← (DPh) OR M1M0
 055B:    69         RMB 01    	;[DP, B1B0)] ← 0
 055C:    48         RT    	;PC ← (STACK)
-055D:    14 81      STM 01    	;TMF/F ← 0 ; TIMER ← I5...I0
+
+055D:    14 81      STM 01    	;TMF/F ← 0 ; TIMER ← I5...I0                                                         ; Reload timer (~1ms)
 055F:    93         LI 03    	;Acc ←  I3I2I1I0
 0560:    3C         XI    	;(Acc) ↔ [(DP)] ; DPl ← (DPl) + 1 ; skip if DPl = F
 0561:    90         CLA    	;Acc ← 0
@@ -1245,6 +1285,7 @@
 0566:    7A         SMB 02    	;[DP, B1B0)] ← 1
 0567:    69         RMB 01    	;[DP, B1B0)] ← 0
 0568:    48         RT    	;PC ← (STACK)
+
 0569:    24         TAB 00    	;skip if [(Acc, B1B0)] = 1
 056A:    F0         JCP 30    	;PC ← p5 … p0
 056B:    79         SMB 01    	;[DP, B1B0)] ← 1
@@ -1252,17 +1293,22 @@
 056D:    90         CLA    	;Acc ← 0
 056E:    02         S    	;[(DP)] ← Acc
 056F:    48         RT    	;PC ← (STACK)
+
 0570:    5D         FBT 01    	;skip if [(FLAG, B1B0)] = 1
 0571:    48         RT    	;PC ← (STACK)
+
 0572:    15 4E      LDI 4E    	;DP ← I6 … I0
 0574:    1F         DEM    	;[(DP)] ← [(DP)] - 1; skip if [(DP)] = F
 0575:    48         RT    	;PC ← (STACK)
+
 0576:    33         IND    	;DPl ← (DPl) + 1 ; skip if (DPl) = 0
 0577:    F4         JCP 34    	;PC ← p5 … p0
 0578:    6D         RFB 01    	;[FLAG, B1B0)] ← 0
-0579:    15 70      LDI 70    	;DP ← I6 … I0
-057B:    68         RMB 00    	;[DP, B1B0)] ← 0
+
+0579:    15 70      LDI 70    	;DP ← I6 … I0                                                ; Load data pointer to 0x70
+057B:    68         RMB 00    	;[DP, B1B0)] ← 0                                             ; and reset bit0
 057C:    48         RT    	;PC ← (STACK)
+
 057D:    68         RMB 00    	;[DP, B1B0)] ← 0
 057E:    15 12      LDI 12    	;DP ← I6 … I0
 0580:    6A         RMB 02    	;[DP, B1B0)] ← 0
@@ -1299,7 +1345,7 @@
 05A2:    17 C8      CI 08    	;skip if (Acc) = I3I2I1I0
 05A4:    92         LI 02    	;Acc ←  I3I2I1I0
 05A5:    94         LI 04    	;Acc ←  I3I2I1I0
-05A6:    55         TPA 01    	;skip if (PORTA(B1B0) = 1
+05A6:    55         TPA 01    	;skip if (PORTA(B1B0) = 1                                ; Skip next instruction if TEST pin is asserted!
 05A7:    02         S    	;[(DP)] ← Acc
 05A8:    AF 00      CAL 0700    	;(PC) → STACK ; PC ← P10...P0
 05AA:    8B         LDZ 0B    	;DPh ← 0 ; DPl ← I3I2I1I0
@@ -1376,6 +1422,8 @@
 05FC:    6B         RMB 03    	;[DP, B1B0)] ← 0
 05FD:    90         CLA    	;Acc ← 0
 05FE:    A6 E4      JMP 06E4    	;PC ← P10 … P0
+
+
 0600:    26         TAB 02    	;skip if [(Acc, B1B0)] = 1
 0601:    A7 38      JMP 0738    	;PC ← P10 … P0
 0603:    8A         LDZ 0A    	;DPh ← 0 ; DPl ← I3I2I1I0
@@ -1400,20 +1448,25 @@
 061B:    02         S    	;[(DP)] ← Acc
 061C:    8B         LDZ 0B    	;DPh ← 0 ; DPl ← I3I2I1I0
 061D:    78         SMB 00    	;[DP, B1B0)] ← 1
-061E:    AF 00      CAL 0700    	;(PC) → STACK ; PC ← P10...P0
-0620:    A2 0F      JMP 020F    	;PC ← P10 … P0
-0622:    76         SEB 02    	;PORT E (B1B0) ← 1
-0623:    00         NOP    	;No operation
-0624:    56         TPA 02    	;skip if (PORTA(B1B0) = 1
+061E:    AF 00      CAL 0700    ;(PC) → STACK ; PC ← P10...P0
+0620:    A2 0F      JMP 020F    ;PC ← P10 … P0
+0622:    76         SEB 02    	;PORT E (B1B0) ← 1                                                   ; ASP / MEMORY CLOCK LINE set
+0623:    00         NOP    	;No operation                                                        ; Delay for NVRAM data input (most probably)
+0624:    56         TPA 02    	;skip if (PORTA(B1B0) = 1                                            ; Check NVRAM data in: if high, then skip
 0625:    48         RT    	;PC ← (STACK)
+
 0626:    49         RTS    	;PC ← (STACK) ; PC ← (PC) + 1 (, 2 maybe a jump can be skipped??)
+
 0627:    90         CLA    	;Acc ← 0
 0628:    0C         CM    	;skip if (Acc) = [(DP)]
 0629:    48         RT    	;PC ← (STACK)
+
 062A:    13         DED    	;DPl ← (DPl) – 1 ; skip if (DPl) = F
 062B:    0C         CM    	;skip if (Acc) = [(DP)]
 062C:    48         RT    	;PC ← (STACK)
+
 062D:    49         RTS    	;PC ← (STACK) ; PC ← (PC) + 1 (, 2 maybe a jump can be skipped??)
+
 062E:    86         LDZ 06    	;DPh ← 0 ; DPl ← I3I2I1I0
 062F:    68         RMB 00    	;[DP, B1B0)] ← 0
 0630:    87         LDZ 07    	;DPh ← 0 ; DPl ← I3I2I1I0
@@ -1462,11 +1515,11 @@
 0661:    8A         LDZ 0A    	;DPh ← 0 ; DPl ← I3I2I1I0
 0662:    6B         RMB 03    	;[DP, B1B0)] ← 0
 0663:    15 23      LDI 23    	;DP ← I6 … I0
-0665:    AE 27      CAL 0627    	;(PC) → STACK ; PC ← P10...P0
+0665:    AE 27      CAL 0627    ;(PC) → STACK ; PC ← P10...P0
 0667:    91         LI 01    	;Acc ←  I3I2I1I0
 0668:    95         LI 05    	;Acc ←  I3I2I1I0
 0669:    15 1E      LDI 1E    	;DP ← I6 … I0
-066B:    55         TPA 01    	;skip if (PORTA(B1B0) = 1
+066B:    55         TPA 01    	;skip if (PORTA(B1B0) = 1                                            ; Skip next instruction if TEST pin is asserted!
 066C:    02         S    	;[(DP)] ← Acc
 066D:    13         DED    	;DPl ← (DPl) – 1 ; skip if (DPl) = F
 066E:    7A         SMB 02    	;[DP, B1B0)] ← 1
@@ -1570,8 +1623,8 @@
 06D7:    E4         JCP 24    	;PC ← p5 … p0
 06D8:    96         LI 06    	;Acc ←  I3I2I1I0
 06D9:    4B         XAW    	;(Acc) ↔ W
-06DA:    01         DI    	;INTE F/F ← 0
-06DB:    AF A2      CAL 07A2    	;(PC) → STACK ; PC ← P10...P0
+06DA:    01         DI    	;INTE F/F ← 0                                        ; Disable interrupt
+06DB:    AF A2      CAL 07A2    ;(PC) → STACK ; PC ← P10...P0
 06DD:    39         LM 01    	;Acc ←  [(DP)] ; DPh ← (DPh) OR M1M0
 06DE:    38         L    	;Acc ←  [(DP)]
 06DF:    81         LDZ 01    	;DPh ← 0 ; DPl ← I3I2I1I0
@@ -1580,8 +1633,8 @@
 06E2:    6B         RMB 03    	;[DP, B1B0)] ← 0
 06E3:    4B         XAW    	;(Acc) ↔ W
 06E4:    87         LDZ 07    	;DPh ← 0 ; DPl ← I3I2I1I0
-06E5:    0E         OP    	;PORT (DPl) ← (Acc)
-06E6:    AD 0B      CAL 050B    	;(PC) → STACK ; PC ← P10...P0
+06E5:    0E         OP    	;PORT (DPl) ← (Acc)                                  ; NVRAM ADDRESS PORT SET
+06E6:    AD 0B      CAL 050B    ;(PC) → STACK ; PC ← P10...P0
 06E8:    83         LDZ 03    	;DPh ← 0 ; DPl ← I3I2I1I0
 06E9:    90         CLA    	;Acc ← 0
 06EA:    0B         CLC    	;C ← 0
@@ -1604,6 +1657,8 @@
 06FC:    3A         LM 02    	;Acc ←  [(DP)] ; DPh ← (DPh) OR M1M0
 06FD:    7A         SMB 02    	;[DP, B1B0)] ← 1
 06FE:    A2 0F      JMP 020F    	;PC ← P10 … P0
+
+; Subroutine starts here (CALled from some spots and implicitly at the end of 7FF)
 0700:    5B         TMB 03    	;skip if [(DP, B1B0)] = 1
 0701:    CE         JCP 0E    	;PC ← p5 … p0
 0702:    91         LI 01    	;Acc ←  I3I2I1I0
@@ -1616,6 +1671,7 @@
 0709:    3C         XI    	;(Acc) ↔ [(DP)] ; DPl ← (DPl) + 1 ; skip if DPl = F
 070A:    9E         LI 0E    	;Acc ←  I3I2I1I0
 070B:    02         S    	;[(DP)] ← Acc
+
 070C:    96         LI 06    	;Acc ←  I3I2I1I0
 070D:    E4         JCP 24    	;PC ← p5 … p0
 070E:    96         LI 06    	;Acc ←  I3I2I1I0
@@ -1629,9 +1685,12 @@
 0717:    6A         RMB 02    	;[DP, B1B0)] ← 0
 0718:    6B         RMB 03    	;[DP, B1B0)] ← 0
 0719:    4B         XAW    	;(Acc) ↔ W
-071A:    87         LDZ 07    	;DPh ← 0 ; DPl ← I3I2I1I0
-071B:    0E         OP    	;PORT (DPl) ← (Acc)
-071C:    AD 0B      CAL 050B    	;(PC) → STACK ; PC ← P10...P0
+
+; This code is also at 0014: Set port H
+071A:    87         LDZ 07    	;DPh ← 0 ; DPl ← I3I2I1I0                                                ; Select PORT H
+071B:    0E         OP    	;PORT (DPl) ← (Acc)                                                      ; Set Acc to PORT H
+071C:    AD 0B      CAL 050B    ;(PC) → STACK ; PC ← P10...P0
+
 071E:    83         LDZ 03    	;DPh ← 0 ; DPl ← I3I2I1I0
 071F:    90         CLA    	;Acc ← 0
 0720:    0B         CLC    	;C ← 0
@@ -1659,6 +1718,10 @@
 0739:    8A         LDZ 0A    	;DPh ← 0 ; DPl ← I3I2I1I0
 073A:    69         RMB 01    	;[DP, B1B0)] ← 0
 073B:    15 13      LDI 13    	;DP ← I6 … I0
+
+; NOTE: there is a jump to 73C: either a dump error or indeed the programmer exploited the 2nd byte of the instruction :-)
+13 ----> DED    	;DPl ← (DPl) – 1 ; skip if (DPl) = F
+
 073D:    CC         JCP 0C    	;PC ← p5 … p0
 073E:    24         TAB 00    	;skip if [(Acc, B1B0)] = 1
 073F:    D4         JCP 14    	;PC ← p5 … p0
@@ -1684,14 +1747,19 @@
 0759:    00         NOP    	;No operation
 075A:    56         TPA 02    	;skip if (PORTA(B1B0) = 1
 075B:    48         RT    	;PC ← (STACK)
+
 075C:    49         RTS    	;PC ← (STACK) ; PC ← (PC) + 1 (, 2 maybe a jump can be skipped??)
+
 075D:    90         CLA    	;Acc ← 0
 075E:    0C         CM    	;skip if (Acc) = [(DP)]
 075F:    48         RT    	;PC ← (STACK)
+
 0760:    13         DED    	;DPl ← (DPl) – 1 ; skip if (DPl) = F
 0761:    0C         CM    	;skip if (Acc) = [(DP)]
 0762:    48         RT    	;PC ← (STACK)
+
 0763:    49         RTS    	;PC ← (STACK) ; PC ← (PC) + 1 (, 2 maybe a jump can be skipped??)
+
 0764:    86         LDZ 06    	;DPh ← 0 ; DPl ← I3I2I1I0
 0765:    68         RMB 00    	;[DP, B1B0)] ← 0
 0766:    87         LDZ 07    	;DPh ← 0 ; DPl ← I3I2I1I0
@@ -1699,9 +1767,11 @@
 0768:    F5         JCP 35    	;PC ← p5 … p0
 0769:    A4 C2      JMP 04C2    	;PC ← P10 … P0
 076B:    78         SMB 00    	;[DP, B1B0)] ← 1
-076C:    84         LDZ 04    	;DPh ← 0 ; DPl ← I3I2I1I0
-076D:    58         TMB 00    	;skip if [(DP, B1B0)] = 1
-076E:    FC         JCP 3C    	;PC ← p5 … p0
+
+; Subroutine starts (called twice when starting)
+076C:    84         LDZ 04    	;DPh ← 0 ; DPl ← I3I2I1I0                                            ; Load RAM address 0x04
+076D:    58         TMB 00    	;skip if [(DP, B1B0)] = 1                                            ; Skip if bit0 content of loaded location is set 
+076E:    FC         JCP 3C    	;PC ← p5 … p0                                                        ; otherwise, goto 0x73C
 076F:    68         RMB 00    	;[DP, B1B0)] ← 0
 0770:    A6 68      JMP 0668    	;PC ← P10 … P0
 0772:    89         LDZ 09    	;DPh ← 0 ; DPl ← I3I2I1I0
@@ -1713,6 +1783,8 @@
 077A:    59         TMB 01    	;skip if [(DP, B1B0)] = 1
 077B:    DD         JCP 1D    	;PC ← p5 … p0
 077C:    A2 0F      JMP 020F    	;PC ← P10 … P0
+
+; This code below is used after setting the NVRAM ADDRESS PORT
 077E:    26         TAB 02    	;skip if [(Acc, B1B0)] = 1
 077F:    C6         JCP 06    	;PC ← p5 … p0
 0780:    58         TMB 00    	;skip if [(DP, B1B0)] = 1
@@ -1740,11 +1812,11 @@
 0797:    8A         LDZ 0A    	;DPh ← 0 ; DPl ← I3I2I1I0
 0798:    6B         RMB 03    	;[DP, B1B0)] ← 0
 0799:    15 23      LDI 23    	;DP ← I6 … I0
-079B:    AE 27      CAL 0627    	;(PC) → STACK ; PC ← P10...P0
+079B:    AE 27      CAL 0627    ;(PC) → STACK ; PC ← P10...P0
 079D:    91         LI 01    	;Acc ←  I3I2I1I0
 079E:    95         LI 05    	;Acc ←  I3I2I1I0
 079F:    15 1E      LDI 1E    	;DP ← I6 … I0
-07A1:    55         TPA 01    	;skip if (PORTA(B1B0) = 1
+07A1:    55         TPA 01    	;skip if (PORTA(B1B0) = 1                                                    ; Skip next instruction if TEST pin is asserted!
 07A2:    02         S    	;[(DP)] ← Acc
 07A3:    13         DED    	;DPl ← (DPl) – 1 ; skip if (DPl) = F
 07A4:    7A         SMB 02    	;[DP, B1B0)] ← 1
