@@ -122,7 +122,9 @@ def clock_instructions(instruction, jump = False):
         clock_cycle()
 
     if (jump == True):
+        time.sleep(0.001)
         exit_test_mode()
+        time.sleep(0.001)
         clock_cycle()
         clock_cycle()
         clock_cycle()
@@ -131,7 +133,9 @@ def clock_instructions(instruction, jump = False):
         clock_cycle()
         clock_cycle()
         clock_cycle()
+        time.sleep(0.001)
         enter_test_mode()
+        time.sleep(0.001)
         clock_cycle()
         clock_cycle()
         clock_cycle()
@@ -217,7 +221,7 @@ AUTOMATIC_SEQUENCE_200 = [1, 0, 1, 8, 2, 4, 7, 0, 99]                   # Sony T
 AUTOMATIC_SEQUENCE_200_ALTERNATIVE = [9, 1, 8, 12, 4, 7, 0, 99]         # Alternative sequence used for verification
 AUTOMATIC_SEQUENCE_TESTING_FIELD_200_0 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-AUTOMATIC_SEQUENCE = AUTOMATIC_SEQUENCE_200                             # Selected dumper sequence
+AUTOMATIC_SEQUENCE = AUTOMATIC_SEQUENCE_024                        # Selected dumper sequence
 
 while 1:
 
