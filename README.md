@@ -38,7 +38,3 @@ c. 4 consecutive dumps on 2 chips have been dumped equally. Need to write a disa
 A simple disassembler is provided. It annotates instructions so to drammatically improve readability.
 
 Instruction's data has been written into a ods sheet and then lookup tables have been generated as Python code: just feed the script the binary file and the corresponding disassembled binary is produced.
-
-# CPU Quircks
-
-Assuming ROM dump to be correct, it appears that the Sony TA-AX 44 binary execution blocks at address 050B -> 050C -> 050B ... It appears that either STM is skipped due to bad dump or the STM instruction is indeed not yet executed e.g. initialization and the TIMER F/F flag is intended to be set while both in MAME and astrowars (debugged here with gdb) emulators the TIMER F/F is not set at the initialization :-)
